@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Accountability Tracker</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Style for the selected button */
+        .btn-present.selected {
+            background-color: #10B981; /* Emerald-500 */
+            color: white;
+            border-color: #059669; /* Emerald-600 */
+        }
+        .btn-not-present.selected {
+            background-color: #EF4444; /* Red-500 */
+            color: white;
+            border-color: #DC2626; /* Red-600 */
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800">
+
+    <div class="container mx-auto">
+        <!-- Header -->
+        <header class="text-center p-4 bg-gray-100">
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Squad Accountability</h1>
+            <p class="text-sm text-gray-600 mt-1">Live status for all teams</p>
+        </header>
+        
+        <!-- Sticky Statistics Section -->
+        <div class="sticky top-0 z-10 bg-white shadow-md p-4 mb-6">
+            <h2 class="text-xl font-bold mb-3 text-center">Live Statistics</h2>
+            <div class="grid grid-cols-2 gap-4">
+                <div class="flex flex-col items-center justify-center bg-emerald-50 p-3 rounded-lg">
+                    <span class="text-md font-medium text-emerald-800">Present</span>
+                    <span id="present-count" class="text-3xl font-bold text-emerald-600">0</span>
+                </div>
+                <div class="flex flex-col items-center justify-center bg-red-50 p-3 rounded-lg">
+                    <span class="text-md font-medium text-red-800">Not Present</span>
+                    <span id="not-present-count" class="text-3xl font-bold text-red-600">0</span>
+                </div>
+            </div>
+            <div class="mt-2 text-center">
+                 <p id="total-members" class="text-xs text-gray-500"></p>
+            </div>
+        </div>
+
+        <!-- Squads container -->
+        <main class="p-4 pt-0">
+             <div id="squads-container" class="grid grid-cols-1 gap-6">
+                <!-- Squads will be dynamically generated here -->
+            </div>
+        </main>
+       
+    </div>
+
+    <script>
+        // --- DATA ---
+        // You can easily add, remove, or change names here.
+        const squads = {
+            "First Squad": ["Priest", "Parrish", "Cortes", "Franklin", "Harris", "Galang", "Vu", "Cheindo", "Carter", "Holloway", "Moore"],
+            "Second Squad": ["Lu", ""],
+            "Third Squad": ["JeanBaptiste", "Owusu", "McBride", "Diaz", "Fontenot", "Grant", "Brown", "Kopp", "Sanchez", "Lawless", "Roberts", "Riojas"],
+            "Fourth Squad": ["Baker", "Chancey", "McKnight", ""]
+        };
+
+        // This will hold the state for each person.
+        // Format: { name: 'Alice Johnson', squad: 'First Squad', status: 'present' }
+        let membersState = [];
+
+        // --- ELEMENTS ---
+        const squadsContainer = document.getElementById('squads-container');
+        const presentCountEl = document.getElementById('present-count');
+        const notPresentCountEl = document.getElementById('not-present-count');
+        const totalMembersEl = document.getElementById('total-members');
+
+
+        // --- FUNCTIONS ---
+
+        /**
+         * Initializes the application state from the squads data.
+         * Everyone starts as 'present'.
+         */
+        function initializeState() {
+            membersState = [];
+            for (const squadName in squads) {
+                squads[squadName].forEach(memberName => {
+                    membersState.push({
+                        name: memberName,
+                        squad: squadName,
+                        status: 'present' // Everyone is present by default
+                    });
+                });
+            }
+        }
+        
+        /**
+         * Renders all the squads and members to the DOM.
+         */
+        function renderSquads() {
+            squadsContainer.innerHTML = ''; // Clear existing content
+
+            for (const squadName in squads) {
+                // Create a container for the squad
+                const squadDiv = document.createElement('div');
+                squadDiv.className = 'bg-white p-6 rounded-lg shadow-md';
+                
+                // Create the squad title
+                const squadTitle = document.createElement('h2');
+                squadTitle.className = 'text-xl font-bold mb-4 text-gray-800';
+                squadTitle.textContent = squadName;
+                squadDiv.appendChild(squadTitle);
+
+                // Create the list of members
+                const memberList = document.createElement('ul');
+                memberList.className = 'space-y-3';
+
+                const membersOfSquad = membersState.filter(m => m.squad === squadName);
+
+                membersOfSquad.forEach(member => {
+                    const li = document.createElement('li');
+                    li.className = 'flex justify-between items-center p-2 rounded-md transition-colors duration-200';
+                    li.dataset.name = member.name; // Store name for easy identification
+
+                    const memberNameSpan = document.createElement('span');
+                    memberNameSpan.className = 'font-medium';
+                    memberNameSpan.textContent = member.name;
+
+                    const buttonGroup = document.createElement('div');
+                    buttonGroup.className = 'flex items-center space-x-2';
+
+                    // Present Button
+                    const presentBtn = document.createElement('button');
+                    presentBtn.textContent = 'Present';
+                    presentBtn.dataset.status = 'present';
+                    presentBtn.className = 'btn-present px-3 py-1 text-sm font-semibold border rounded-md transition-all duration-200';
+
+                    // Not Present Button
+                    const notPresentBtn = document.createElement('button');
+                    notPresentBtn.textContent = 'Not Present';
+                    notPresentBtn.dataset.status = 'not-present';
+                    notPresentBtn.className = 'btn-not-present px-3 py-1 text-sm font-semibold border rounded-md transition-all duration-200';
+                    
+                    // Set initial selected state
+                    if (member.status === 'present') {
+                        presentBtn.classList.add('selected');
+                         li.classList.add('bg-emerald-50');
+                    } else {
+                        notPresentBtn.classList.add('selected');
+                        li.classList.add('bg-red-50');
+                    }
+
+                    buttonGroup.appendChild(presentBtn);
+                    buttonGroup.appendChild(notPresentBtn);
+                    li.appendChild(memberNameSpan);
+                    li.appendChild(buttonGroup);
+                    memberList.appendChild(li);
+                });
+                
+                squadDiv.appendChild(memberList);
+                squadsContainer.appendChild(squadDiv);
+            }
+        }
+
+        /**
+         * Updates the statistics panel based on the current state.
+         */
+        function updateStatistics() {
+            const presentCount = membersState.filter(m => m.status === 'present').length;
+            const notPresentCount = membersState.length - presentCount;
+
+            presentCountEl.textContent = presentCount;
+            notPresentCountEl.textContent = notPresentCount;
+            totalMembersEl.textContent = `Total Members: ${membersState.length}`;
+        }
+        
+        /**
+         * Handles clicks on the status buttons using event delegation.
+         */
+        function handleStatusChange(event) {
+            const target = event.target;
+            
+            // Check if a status button was clicked
+            if (target.tagName === 'BUTTON' && target.dataset.status) {
+                const newStatus = target.dataset.status;
+                const listItem = target.closest('li');
+                const memberName = listItem.dataset.name;
+                
+                // Find the member in our state array
+                const member = membersState.find(m => m.name === memberName);
+                
+                if (member && member.status !== newStatus) {
+                    // Update the state
+                    member.status = newStatus;
+                    
+                    // Update the UI for this specific member
+                    const presentBtn = listItem.querySelector('.btn-present');
+                    const notPresentBtn = listItem.querySelector('.btn-not-present');
+
+                    if (newStatus === 'present') {
+                        presentBtn.classList.add('selected');
+                        notPresentBtn.classList.remove('selected');
+                        listItem.classList.remove('bg-red-50');
+                        listItem.classList.add('bg-emerald-50');
+                    } else {
+                        notPresentBtn.classList.add('selected');
+                        presentBtn.classList.remove('selected');
+                        listItem.classList.remove('bg-emerald-50');
+                        listItem.classList.add('bg-red-50');
+                    }
+                    
+                    // Recalculate and update the main statistics
+                    updateStatistics();
+                }
+            }
+        }
+
+
+        // --- INITIALIZATION ---
+
+        // Add the main event listener
+        squadsContainer.addEventListener('click', handleStatusChange);
+
+        // Run the setup functions when the page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            initializeState();
+            renderSquads();
+            updateStatistics();
+        });
+
+    </script>
+</body>
+</html>
