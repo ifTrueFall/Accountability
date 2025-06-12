@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <link rel="icon" type="image/svg+xml"
+    href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext x='-27' y='75' font-family='Courier' font-size='117' fill='%23000'%3E☕%3C/text%3E%3C/svg%3E" />
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Accountability</title>
@@ -15,16 +17,26 @@
         body {
             font-family: 'Inter', sans-serif;
         }
-        /* Style for the selected button */
-        .btn-present.selected {
-            background-color: #10B981; /* Emerald-500 */
-            color: white;
-            border-color: #059669; /* Emerald-600 */
+        /* Transition for the chevron icon rotation */
+        .chevron-icon {
+            transition: transform 0.3s ease;
         }
-        .btn-not-present.selected {
-            background-color: #EF4444; /* Red-500 */
-            color: white;
-            border-color: #DC2626; /* Red-600 */
+        .squad-title-btn[aria-expanded="false"] .chevron-icon {
+            transform: rotate(0deg);
+        }
+        .squad-title-btn[aria-expanded="true"] .chevron-icon {
+            transform: rotate(180deg);
+        }
+        /* Custom styling for the select dropdown */
+        .status-select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20"><path stroke="%236B7280" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="m6 8 4 4 4-4"/></svg>');
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.25em;
+            padding-right: 2rem; /* Make space for arrow */
         }
     </style>
 </head>
@@ -37,17 +49,10 @@
         
         <!-- Sticky Statistics Section -->
         <div class="sticky top-0 z-10 bg-white shadow-md p-4 mb-6">
-            <div class="grid grid-cols-2 gap-4">
-                <div class="flex flex-col items-center justify-center bg-emerald-50 p-3 rounded-lg">
-                    <span class="text-md font-medium text-emerald-800">Present</span>
-                    <span id="present-count" class="text-3xl font-bold text-emerald-600">0</span>
-                </div>
-                <div class="flex flex-col items-center justify-center bg-red-50 p-3 rounded-lg">
-                    <span class="text-md font-medium text-red-800">Not Present</span>
-                    <span id="not-present-count" class="text-3xl font-bold text-red-600">0</span>
-                </div>
+             <div id="statistics-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <!-- Statistics will be dynamically generated here -->
             </div>
-            <div class="mt-2 text-center">
+            <div class="mt-3 text-center">
                  <p id="total-members" class="text-xs text-gray-500"></p>
             </div>
         </div>
@@ -63,22 +68,29 @@
 
     <script>
         // --- DATA ---
-        // You can easily add, remove, or change names here.
         const squads = {
-            "First Squad": ["Priest", "Parrish", "Cortes", "Franklin", "Harris", "Galang", "Vu", "Cheindo", "Carter", "Holloway", "Moore"],
-            "Second Squad": ["Lu", ""],
-            "Third Squad": ["JeanBaptiste", "Owusu", "McBride", "Diaz", "Fontenot", "Grant", "Brown", "Kopp", "Sanchez", "Lawless", "Roberts", "Riojas"],
-            "Fourth Squad": ["Baker", "Chancey", "McKnight", ""]
+            "First Squad": ["Mays", "Priest", "Parrish", "Cortes", "Franklin", "Harris", "Galang", "Vu", "Cheindo", "Carter", "Holloway", "Moore"],
+            "Second Squad": ["Lu", "Battle", "Brown", "Butler", "Cooper", "Heredia", "Hernandez", "Hunt", "Rousell", "Yang"],
+            "Third Squad": ["JeanBaptiste", "Owusu", "McBride", "Diaz", "Fontenot", "Grant", "Brown", "Sanchez", "Lawless", "Mendez-Mathis"],
+            "Fourth Squad": ["Becker", "Fowler", "Roberts", "Riojas", "Lee", "William", "Baker", "Kopp", "McKnight"]
         };
+        
+        // Define all possible status options with associated styling
+        const statusOptions = [
+            { value: 'Present', text: 'Present', rowBg: 'bg-emerald-50', statBg: 'bg-emerald-50', statText: 'text-emerald-800', statCount: 'text-emerald-600' },
+            { value: 'Not Present', text: 'Not Present', rowBg: 'bg-red-50', statBg: 'bg-red-50', statText: 'text-red-800', statCount: 'text-red-600' },
+            { value: 'Sick call', text: 'Sick call', rowBg: 'bg-yellow-50', statBg: 'bg-yellow-50', statText: 'text-yellow-800', statCount: 'text-yellow-600' },
+            { value: 'Retest', text: 'Retest', rowBg: 'bg-yellow-50', statBg: 'bg-yellow-50', statText: 'text-yellow-800', statCount: 'text-yellow-600' },
+            { value: 'Appointment', text: 'Appointment', rowBg: 'bg-yellow-50', statBg: 'bg-yellow-50', statText: 'text-yellow-800', statCount: 'text-yellow-600' },
+            { value: 'Study skill', text: 'Study skill', rowBg: 'bg-yellow-50', statBg: 'bg-yellow-50', statText: 'text-yellow-800', statCount: 'text-yellow-600' },
+            { value: 'Q&A', text: 'Q&A', rowBg: 'bg-yellow-50', statBg: 'bg-yellow-50', statText: 'text-yellow-800', statCount: 'text-yellow-600' }
+        ];
 
-        // This will hold the state for each person.
-        // Format: { name: 'Alice Johnson', squad: 'First Squad', status: 'present' }
         let membersState = [];
 
         // --- ELEMENTS ---
         const squadsContainer = document.getElementById('squads-container');
-        const presentCountEl = document.getElementById('present-count');
-        const notPresentCountEl = document.getElementById('not-present-count');
+        const statisticsContainer = document.getElementById('statistics-container');
         const totalMembersEl = document.getElementById('total-members');
 
 
@@ -86,81 +98,78 @@
 
         /**
          * Initializes the application state from the squads data.
-         * Everyone starts as 'present'.
+         * Filters out empty names and sets everyone to 'present'.
          */
         function initializeState() {
             membersState = [];
             for (const squadName in squads) {
-                squads[squadName].forEach(memberName => {
+                squads[squadName].filter(name => name && name.trim() !== '').forEach(memberName => {
                     membersState.push({
                         name: memberName,
                         squad: squadName,
-                        status: 'present' // Everyone is present by default
+                        status: 'Present' // Default status
                     });
                 });
             }
         }
         
         /**
-         * Renders all the squads and members to the DOM.
+         * Renders all the squads and members to the DOM with collapsible sections.
          */
         function renderSquads() {
             squadsContainer.innerHTML = ''; // Clear existing content
 
             for (const squadName in squads) {
-                // Create a container for the squad
-                const squadDiv = document.createElement('div');
-                squadDiv.className = 'bg-white p-6 rounded-lg shadow-md';
-                
-                // Create the squad title
-                const squadTitle = document.createElement('h2');
-                squadTitle.className = 'text-xl font-bold mb-4 text-gray-800';
-                squadTitle.textContent = squadName;
-                squadDiv.appendChild(squadTitle);
-
-                // Create the list of members
-                const memberList = document.createElement('ul');
-                memberList.className = 'space-y-3';
-
                 const membersOfSquad = membersState.filter(m => m.squad === squadName);
+                if (membersOfSquad.length === 0) continue; 
+
+                const squadDiv = document.createElement('div');
+                squadDiv.className = 'bg-white p-4 rounded-lg shadow-md';
+                
+                const squadTitleBtn = document.createElement('button');
+                squadTitleBtn.className = 'squad-title-btn w-full flex justify-between items-center text-left';
+                squadTitleBtn.setAttribute('aria-expanded', 'false');
+                squadTitleBtn.setAttribute('aria-controls', `squad-list-${squadName.replace(/\s+/g, '-')}`);
+
+                squadTitleBtn.innerHTML = `
+                    <h2 class="text-xl font-bold text-gray-800">${squadName} (${membersOfSquad.length})</h2>
+                    <svg class="chevron-icon w-6 h-6 text-gray-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+                    </svg>
+                `;
+                squadDiv.appendChild(squadTitleBtn);
+
+                const memberList = document.createElement('ul');
+                memberList.id = `squad-list-${squadName.replace(/\s+/g, '-')}`;
+                memberList.className = 'space-y-3 mt-4 hidden';
 
                 membersOfSquad.forEach(member => {
                     const li = document.createElement('li');
-                    li.className = 'flex justify-between items-center p-2 rounded-md transition-colors duration-200';
-                    li.dataset.name = member.name; // Store name for easy identification
+                    const currentStatus = statusOptions.find(s => s.value === member.status) || statusOptions[0];
+                    li.className = `flex justify-between items-center p-2 rounded-md transition-colors duration-200 ${currentStatus.rowBg}`;
+                    li.dataset.name = member.name;
 
                     const memberNameSpan = document.createElement('span');
-                    memberNameSpan.className = 'font-medium';
+                    memberNameSpan.className = 'font-medium text-gray-800';
                     memberNameSpan.textContent = member.name;
-
-                    const buttonGroup = document.createElement('div');
-                    buttonGroup.className = 'flex items-center space-x-2';
-
-                    // Present Button
-                    const presentBtn = document.createElement('button');
-                    presentBtn.textContent = 'Present';
-                    presentBtn.dataset.status = 'present';
-                    presentBtn.className = 'btn-present px-3 py-1 text-sm font-semibold border rounded-md transition-all duration-200';
-
-                    // Not Present Button
-                    const notPresentBtn = document.createElement('button');
-                    notPresentBtn.textContent = 'Not Present';
-                    notPresentBtn.dataset.status = 'not-present';
-                    notPresentBtn.className = 'btn-not-present px-3 py-1 text-sm font-semibold border rounded-md transition-all duration-200';
                     
-                    // Set initial selected state
-                    if (member.status === 'present') {
-                        presentBtn.classList.add('selected');
-                         li.classList.add('bg-emerald-50');
-                    } else {
-                        notPresentBtn.classList.add('selected');
-                        li.classList.add('bg-red-50');
-                    }
+                    // Create dropdown select element
+                    const selectEl = document.createElement('select');
+                    selectEl.dataset.name = member.name;
+                    selectEl.className = 'status-select border border-gray-300 rounded-md text-sm p-1.5 focus:ring-2 focus:ring-blue-500 focus:border-blue-500';
 
-                    buttonGroup.appendChild(presentBtn);
-                    buttonGroup.appendChild(notPresentBtn);
+                    statusOptions.forEach(opt => {
+                        const optionEl = document.createElement('option');
+                        optionEl.value = opt.value;
+                        optionEl.textContent = opt.text;
+                        if (member.status === opt.value) {
+                            optionEl.selected = true;
+                        }
+                        selectEl.appendChild(optionEl);
+                    });
+
                     li.appendChild(memberNameSpan);
-                    li.appendChild(buttonGroup);
+                    li.appendChild(selectEl);
                     memberList.appendChild(li);
                 });
                 
@@ -170,53 +179,65 @@
         }
 
         /**
-         * Updates the statistics panel based on the current state.
+         * Updates the statistics panel with a breakdown for each status.
          */
         function updateStatistics() {
-            const presentCount = membersState.filter(m => m.status === 'present').length;
-            const notPresentCount = membersState.length - presentCount;
+            statisticsContainer.innerHTML = ''; // Clear previous stats
 
-            presentCountEl.textContent = presentCount;
-            notPresentCountEl.textContent = notPresentCount;
+            statusOptions.forEach(status => {
+                const count = membersState.filter(m => m.status === status.value).length;
+                
+                // Only display the stat box if the count is > 0 OR if it's the "Present" status
+                if (count > 0 || status.value === 'Present') {
+                     const statBox = document.createElement('div');
+                     statBox.className = `flex flex-col items-center justify-center p-2 rounded-lg ${status.statBg}`;
+                     statBox.innerHTML = `
+                        <span class="text-sm font-medium ${status.statText}">${status.text}</span>
+                        <span class="text-2xl font-bold ${status.statCount}">${count}</span>
+                     `;
+                     statisticsContainer.appendChild(statBox);
+                }
+            });
+
             totalMembersEl.textContent = `Total Members: ${membersState.length}`;
         }
         
         /**
-         * Handles clicks on the status buttons using event delegation.
+         * Handles click events for collapsing squad lists.
+         */
+        function handleContainerClick(event) {
+            const titleButton = event.target.closest('.squad-title-btn');
+            if(titleButton){
+                const isExpanded = titleButton.getAttribute('aria-expanded') === 'true';
+                const listId = titleButton.getAttribute('aria-controls');
+                const listToToggle = document.getElementById(listId);
+
+                titleButton.setAttribute('aria-expanded', !isExpanded);
+                listToToggle.classList.toggle('hidden');
+            }
+        }
+        
+        /**
+         * Handles status changes from the dropdown select.
          */
         function handleStatusChange(event) {
             const target = event.target;
-            
-            // Check if a status button was clicked
-            if (target.tagName === 'BUTTON' && target.dataset.status) {
-                const newStatus = target.dataset.status;
-                const listItem = target.closest('li');
-                const memberName = listItem.dataset.name;
+            if(target.tagName === 'SELECT'){
+                const newStatusValue = target.value;
+                const memberName = target.dataset.name;
                 
-                // Find the member in our state array
                 const member = membersState.find(m => m.name === memberName);
-                
-                if (member && member.status !== newStatus) {
-                    // Update the state
-                    member.status = newStatus;
-                    
-                    // Update the UI for this specific member
-                    const presentBtn = listItem.querySelector('.btn-present');
-                    const notPresentBtn = listItem.querySelector('.btn-not-present');
+                if (member && member.status !== newStatusValue) {
+                    member.status = newStatusValue;
 
-                    if (newStatus === 'present') {
-                        presentBtn.classList.add('selected');
-                        notPresentBtn.classList.remove('selected');
-                        listItem.classList.remove('bg-red-50');
-                        listItem.classList.add('bg-emerald-50');
-                    } else {
-                        notPresentBtn.classList.add('selected');
-                        presentBtn.classList.remove('selected');
-                        listItem.classList.remove('bg-emerald-50');
-                        listItem.classList.add('bg-red-50');
-                    }
+                    // Update UI for this row
+                    const listItem = target.closest('li');
+                    const newStatusInfo = statusOptions.find(s => s.value === newStatusValue);
+
+                    // Remove old color classes before adding new one
+                    statusOptions.forEach(s => listItem.classList.remove(s.rowBg));
+                    listItem.classList.add(newStatusInfo.rowBg);
                     
-                    // Recalculate and update the main statistics
                     updateStatistics();
                 }
             }
@@ -224,11 +245,9 @@
 
 
         // --- INITIALIZATION ---
+        squadsContainer.addEventListener('click', handleContainerClick);
+        squadsContainer.addEventListener('change', handleStatusChange);
 
-        // Add the main event listener
-        squadsContainer.addEventListener('click', handleStatusChange);
-
-        // Run the setup functions when the page loads
         document.addEventListener('DOMContentLoaded', () => {
             initializeState();
             renderSquads();
